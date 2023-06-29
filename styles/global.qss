@@ -1,0 +1,21 @@
+#Visible-Window {
+    background-color: purple;
+}
+
+#Frameless-Widget {
+    background-color: white;
+}
+
+
+#Main-Frameless-Window {
+    background-color: yellow;
+}
+
+#TitleBarFrame {
+    background-color: blue;
+}
+
+#WindowContentFrame {
+    background-color: orange;
+}
+

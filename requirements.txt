@@ -1,0 +1,6 @@
+pycairo==1.23.0
+PyGObject==3.44.1
+PySide6==6.5.1.1
+PySide6-Addons==6.5.1.1
+PySide6-Essentials==6.5.1.1
+shiboken6==6.5.1.1
