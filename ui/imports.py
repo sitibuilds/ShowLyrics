@@ -6,8 +6,13 @@ from PySide6.QtWidgets import (
     QFrame,
     QStyleOption,
     QStyle,
-    QSizeGrip
+    QSizeGrip,
+    QHBoxLayout,
+    QLabel,
+    QSpacerItem,
+    QSizePolicy,
 )
+from PySide6.QtSvgWidgets import QSvgWidget
 
 WindowTypes = QtCore.Qt.WindowType
 WidgetAttributes = QtCore.Qt.WidgetAttribute
@@ -26,3 +31,6 @@ QDragMoveEvent = QtGui.QDragMoveEvent
 QPalette = QtGui.QPalette
 QBrush = QtGui.QBrush
 QColor = QtGui.QColor
+QImage = QtGui.QImage
+AlignmentFlag = Qt.AlignmentFlag
+QPixmap = QtGui.QPixmap
