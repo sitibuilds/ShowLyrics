@@ -1,0 +1,8 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/fonts">
+        <file alias="Montserrat-Regular.ttf">Fonts/Montserrat/Montserrat-Regular.ttf</file>
+        <file alias="Montserrat-Bold.ttf">Fonts/Montserrat/Montserrat-Bold.ttf</file>
+        <file alias="Montserrat-SemiBold.ttf">Fonts/Montserrat/Montserrat-SemiBold.ttf</file>
+    </qresource>
+</RCC>
