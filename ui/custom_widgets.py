@@ -1,5 +1,4 @@
 import enum
-
 from ui.qt_imports import QPaintEvent
 
 from .qt_imports import *
@@ -22,7 +21,7 @@ class CustomQWidget(QWidget):
     def __customPaintEvent(self, event):
         # type: (QPaintEvent) -> None
         # https://forum.qt.io/topic/100691/custom-qwidget-setstylesheet-not-working-python/4
-        print("CustomQWidget PaintEvent")
+
         o = QStyleOption()
         o.initFrom(self)
         p = QPainter(self)
@@ -74,31 +73,45 @@ class CustomQWidget(QWidget):
 
 
 class ResizableFramelessWidget(
-    CustomQWidget,
+    QWidget,
 ):
-    OBJECTNAME = "ResizableFramelessWidget"
-
     class BorderStyle:
         def __init__(self, **kwargs):
             # type: (...) -> None
-            self._minRadius, self._minThickness = 5, 5
+            self._minRadius, self._minThickness = 0, 3
 
             # Default border style
             self.thickness = self._minThickness
-            self.color = ""
+            self.color = None
             self.radius = self._minRadius
             self.setStyle(**kwargs)
+
+        def __arg_type_check(self, **kwargs):
+            # type: (...) -> bool
+            # True if all arguments have expected types
+            state = True
+            for val in kwargs:
+                if val in ("color", "fallback_color"):
+                    state = state and isinstance(kwargs[val], (QColor, type(None)))
+
+                elif val in ("radius", "thickness"):
+                    state = state and isinstance(kwargs[val], (int))
+            return state
 
         def setStyle(
             self,
             **kwargs,
         ):
             # type: (...) -> None
+            if not self.__arg_type_check(**kwargs):
+                print("BorderStyle: setStyle received bad argument types")
+                return
+
             obj = kwargs.get("obj", None)
             if type(obj) == type(self):
                 _d = dict()
                 if "fallback_color" in kwargs:
-                    _d["fallback_color"] = kwargs["fallback_color"].strip()
+                    _d["fallback_color"] = kwargs["fallback_color"]
                 _d.update(obj.__toDict())
                 self.setStyle(**_d)
 
@@ -110,13 +123,13 @@ class ResizableFramelessWidget(
                     self.radius = max(self._minRadius, kwargs["radius"])
 
                 if self.color:
-                    c = kwargs.get("color", "").strip()
+                    c = kwargs.get("color", None)
                     if c:
                         self.color = c
 
                 else:
-                    c = kwargs.get("color", "").strip()
-                    fallback = kwargs.get("fallback_color", "").strip()
+                    c = kwargs.get("color", "")
+                    fallback = kwargs.get("fallback_color", None)
                     if c:
                         self.color = c
                     else:
@@ -124,22 +137,7 @@ class ResizableFramelessWidget(
 
         def __str__(self):
             # type: () -> str
-            # return str(self.__toDict())
-            return self.stylesheet
-
-        @property
-        def stylesheet(self):
-            # type: () -> str
-            _sheet = ""
-            _sheet += f" border-width: 1px; border-style: solid; border-radius: {self.radius}px; "
-            if self.color:
-                _sheet += (
-                    f"background-color: {self.color}; border-color: {self.color}; "
-                )
-                # _sheet += f"background-color: {self.color}; border: 1px solid {self.color};"
-            # _sheet += f" border-radius: {self.radius}px;"
-
-            return f"#{ResizableFramelessWidget.OBJECTNAME}" " { " + _sheet + " }"
+            return str(self.__toDict())
 
         def __toDict(self):
             # type: () -> dict
@@ -166,42 +164,62 @@ class ResizableFramelessWidget(
         else:
             super().__init__(parent, WindowTypes.FramelessWindowHint | f)
 
-        self.setObjectName(self.OBJECTNAME)
-        self.setAttribute(WidgetAttributes.WA_StyledBackground, True)
+        self.setAttribute(WidgetAttributes.WA_TranslucentBackground, True)
 
         # Resizing support
         self.setMouseTracking(True)
 
         self._borderStyle = self.BorderStyle()
-        self.__minBorderWidth = 5
         self.__resizeActive = False
         self._offendingBorder = self.__ResizableWidgetBorder.UNSET
+        self.__enabled = True
 
-    
-    # def _custom_repaint(self):
-    #     # type: () -> None
-    #     # https://stackoverflow.com/questions/32491282/qframe-round-border-transparent-background
-    #     painter = QPainter()
-    #     if painter.begin(self):
-    #         painter.setBackgroundMode(BGMode.OpaqueMode)
+    def enableResize(self, state):
+        # type: (bool) -> None
+        self.__enabled = state if type(state) is bool else True
 
-    #         self.brush = QBrush(BrushStyle.SolidPattern)
-    #         painter.setBrush(self.brush)
-    #         self.brush.setColor(QColor(255, 0, 0, 1))
-    #         painter.fillRect(self.rect(), self.brush)
+    def isResizeEnabled(self):
+        # type: () -> bool
+        return self.__enabled
 
-    #         print("painter end ", painter.end())
-    #         self.update()
+    def isResizeDisabled(self):
+        # type: () -> bool
+        return not self.__enabled
+
+    def _custom_repaint(self):
+        # type: () -> None
+
+        painter = QPainter()
+        brush = QBrush(BrushStyle.SolidPattern)
+        bg_color = (
+            self.__bg_color()
+            if self._borderStyle.color is None
+            else self._borderStyle.color
+        )
+        brush.setColor(bg_color)
+
+        pen = QPen(GlobalColor.transparent, self._borderStyle.thickness)
+
+        if painter.begin(self):
+            painter.setBackgroundMode(BGMode.OpaqueMode)
+            painter.setPen(pen)
+            painter.setBrush(brush)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+            rect = QRect(0, 0, max(self.width() - 1, 0), max(self.height() - 1, 0))
+            painter.drawRoundedRect(
+                rect, self._borderStyle.radius, self._borderStyle.radius
+            )
+            painter.end()
 
     def __bg_color(self):
-        # type: () -> str
-        color = self.palette().color(self.backgroundRole())
-        return f"rgb({color.red()+10}, {color.green()+10}, {color.blue()+10})"
+        # type: () -> QColor
+        return self.palette().color(self.backgroundRole())
 
     def setBorderStyle(
-        self, borderColor="", borderThickness=-1, borderRadius=-1, borderStyle=None
+        self, borderColor=None, borderThickness=-1, borderRadius=-1, borderStyle=None
     ):
-        # type: (str, int, int, BorderStyle | None) -> None
+        # type: (QColor, int, int, BorderStyle | None) -> None
         if borderStyle is not None:
             self._borderStyle.setStyle(
                 obj=borderStyle, fallback_color=self.__bg_color()
@@ -213,19 +231,8 @@ class ResizableFramelessWidget(
                 radius=borderRadius,
                 fallback_color=self.__bg_color(),
             )
-        print(self._borderStyle)
-        # Update border styling
-        # self.setStyleSheet(self._borderStyle.stylesheet)
 
-        # Update border thickness
-        val = max(self.__minBorderWidth, self._borderStyle.thickness)
-
-        if self.layout():
-            self.layout().setContentsMargins(*(val,) * 4)
-        else:
-            self.setContentsMargins(*(val,) * 4)
-
-        # self._custom_repaint()
+        self.repaint()
 
     def __updateCursor(self, border=None):
         # type: (__ResizableWidgetBorder) -> None
@@ -249,14 +256,16 @@ class ResizableFramelessWidget(
         # type: ( int, int) -> __ResizableWidgetBorder
         w, h = self.width(), self.height()
         border = self.__ResizableWidgetBorder.UNSET
-        if relPosX <= 0 + self._borderStyle.thickness:
+        thickness = self._borderStyle.thickness + 3  # added padding
+
+        if relPosX <= 0 + thickness:
             border |= self.__ResizableWidgetBorder.LEFT
-        elif w - self._borderStyle.thickness <= relPosX <= w or relPosX > w:
+        elif w - thickness <= relPosX <= w or relPosX > w:
             border |= self.__ResizableWidgetBorder.RIGHT
 
-        if relPosY <= 0 + self._borderStyle.thickness:
+        if relPosY <= 0 + thickness:
             border |= self.__ResizableWidgetBorder.TOP
-        elif h - self._borderStyle.thickness <= relPosY <= h or relPosY > h:
+        elif h - thickness <= relPosY <= h or relPosY > h:
             border |= self.__ResizableWidgetBorder.BOTTOM
 
         if border == self.__ResizableWidgetBorder.UNSET:
@@ -274,56 +283,64 @@ class ResizableFramelessWidget(
         # type: (QEvent | QMouseEvent) -> bool
 
         if isinstance(event, QMouseEvent):
-            pos = event.position()
-            relPosX, relPosY = pos.x(), pos.y()
 
-            if event.type() == QEvent.Type.MouseButtonPress:
-                self.__resizeActive = self.__isCursorInBorder(relPosX, relPosY)
-                self._offendingBorder = self.__getHoveredBorder(relPosX, relPosY)
+            if self.__enabled:
+                pos = event.position()
+                relPosX, relPosY = pos.x(), pos.y()
 
-            elif event.type() == QEvent.Type.MouseButtonRelease:
-                if self.__resizeActive:
-                    self.__resizeActive = False
+                if event.type() == QEvent.Type.MouseButtonPress:
+                    self.__resizeActive = self.__isCursorInBorder(relPosX, relPosY)
+                    self._offendingBorder = self.__getHoveredBorder(relPosX, relPosY)
 
-                self._offendingBorder = self.__ResizableWidgetBorder.UNSET
+                elif event.type() == QEvent.Type.MouseButtonRelease:
+                    if self.__resizeActive:
+                        self.__resizeActive = False
 
-            elif event.type() == QEvent.Type.MouseMove:
+                    self._offendingBorder = self.__ResizableWidgetBorder.UNSET
 
-                if not self.__resizeActive:
-                    hoveredBorder = self.__getHoveredBorder(relPosX, relPosY)
-                    self.__updateCursor(hoveredBorder)
+                elif event.type() == QEvent.Type.MouseMove:
 
-                else:
-                    size = self.size()
-                    oldW, oldH = size.width(), size.height()
-                    x, y = self.x(), self.y()
+                    if not self.__resizeActive:
+                        hoveredBorder = self.__getHoveredBorder(relPosX, relPosY)
+                        self.__updateCursor(hoveredBorder)
 
-                    globalPosition = event.globalPosition()
-                    cursorGlobalX, cursorGlobalY = (
-                        globalPosition.x(),
-                        globalPosition.y(),
-                    )
+                    else:
+                        size = self.size()
+                        oldW, oldH = size.width(), size.height()
+                        x, y = self.x(), self.y()
 
-                    y1, y2, x1, x2 = y, y + oldH, x, x + oldW
+                        globalPosition = event.globalPosition()
+                        cursorGlobalX, cursorGlobalY = (
+                            globalPosition.x(),
+                            globalPosition.y(),
+                        )
 
-                    if self.__ResizableWidgetBorder.TOP in self._offendingBorder:
-                        y1 = cursorGlobalY
+                        y1, y2, x1, x2 = y, y + oldH, x, x + oldW
 
-                    elif self.__ResizableWidgetBorder.BOTTOM in self._offendingBorder:
-                        y2 = cursorGlobalY
+                        if self.__ResizableWidgetBorder.TOP in self._offendingBorder:
+                            y1 = cursorGlobalY
 
-                    if self.__ResizableWidgetBorder.LEFT in self._offendingBorder:
-                        x1 = cursorGlobalX
+                        elif (
+                            self.__ResizableWidgetBorder.BOTTOM in self._offendingBorder
+                        ):
+                            y2 = cursorGlobalY
 
-                    elif self.__ResizableWidgetBorder.RIGHT in self._offendingBorder:
-                        x2 = cursorGlobalX
+                        if self.__ResizableWidgetBorder.LEFT in self._offendingBorder:
+                            x1 = cursorGlobalX
 
-                    newX, newY = x1, y1
-                    newW, newH = max(0, x2 - x1), max(0, y2 - y1)
+                        elif (
+                            self.__ResizableWidgetBorder.RIGHT in self._offendingBorder
+                        ):
+                            x2 = cursorGlobalX
 
-                    self.setGeometry(newX, newY, newW, newH)
+                        newX, newY = x1, y1
+                        newW, newH = max(0, x2 - x1), max(0, y2 - y1)
+
+                        self.setGeometry(newX, newY, newW, newH)
 
                 return True
+
+            return False
         elif event.type() == QEvent.Type.Paint:
             self._custom_repaint()
             return True

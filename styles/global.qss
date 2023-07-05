@@ -1,8 +1,0 @@
-#TitleBarFrame {
-    background-color: blue;
-}
-
-#WindowContentFrame {
-    background-color: orange;
-}
-

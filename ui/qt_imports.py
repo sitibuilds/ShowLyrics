@@ -22,18 +22,20 @@ QEasingCurve = QtCore.QEasingCurve
 QEvent = QtCore.QEvent
 QObject = QtCore.QObject
 QPropertyAnimation = QtCore.QPropertyAnimation
+QSize = QtCore.QSize
+QRect = QtCore.QRect
 
+AlignmentFlag = Qt.AlignmentFlag
+ApplicationAttributes = Qt.ApplicationAttribute
+ApplicationStates = Qt.ApplicationState
 BGMode = Qt.BGMode
 BrushStyle = Qt.BrushStyle
+CursorShape = Qt.CursorShape
 GlobalColor = Qt.GlobalColor
+SizeMode = Qt.SizeMode
 WidgetAttributes = Qt.WidgetAttribute
 WindowTypes = Qt.WindowType
 
-ApplicationAttributes = Qt.ApplicationAttribute
-ApplicationStates = Qt.ApplicationState
-CursorShape = Qt.CursorShape
-
-AlignmentFlag = Qt.AlignmentFlag
 QBrush = QtGui.QBrush
 QColor = QtGui.QColor
 QCursor = QtGui.QCursor
@@ -46,6 +48,8 @@ QHoverEvent = QtGui.QHoverEvent
 QImage = QtGui.QImage
 QMouseEvent = QtGui.QMouseEvent
 QPainter = QtGui.QPainter
+QPainterPath = QtGui.QPainterPath
+QPen = QtGui.QPen
 QPaintEvent = QtGui.QPaintEvent
 QPalette = QtGui.QPalette
 QPixmap = QtGui.QPixmap

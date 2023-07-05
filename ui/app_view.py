@@ -28,13 +28,18 @@ class AppLabel(QLabel):
 
 
 class MainWindow(ResizableFramelessWidget):
-    def __init__(self, parent, ):
+    def __init__(
+        self,
+        parent,
+    ):
         # type: (QWidget | None,) -> None
 
-        super().__init__(parent, WindowTypes.Window)
+        super().__init__(
+            parent,
+        )
 
         mainLayout = QVBoxLayout(self)
-        
+
         def closeWindow(ev):
             print("closing window")
             self.close()
@@ -64,7 +69,13 @@ class MainWindow(ResizableFramelessWidget):
         self.setLayout(mainLayout)
         self.resize(400, 180)
 
-        self.setBorderStyle(borderStyle=self.BorderStyle(radius=10, thickness=5))
+        self.setBorderStyle(
+            borderStyle=self.BorderStyle(
+                radius=10,
+                thickness=5,
+            )
+        )
+
 
 class TitleBarGroup(CustomQWidget):
     def __init__(self, parent, f=None, mainText="", subText="", onCloseCallback=None):
