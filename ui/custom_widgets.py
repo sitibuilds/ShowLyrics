@@ -27,11 +27,12 @@ class CustomQWidget(QWidget):
         p = QPainter(self)
         self.style().drawPrimitive(QStyle.PrimitiveElement.PE_Widget, o, p, self)
 
-    def mouseMoveEvent(self, event):
-        # type: (QMouseEvent) -> None
-        self.setCursor(CursorShape.ArrowCursor)
-        return False
-        # return super().mouseMoveEvent(event)
+    # def mouseMoveEvent(self, event):
+    #     # type: (QMouseEvent) -> None
+    #     print("ms move CustomQWidget")
+    #     self.setCursor(CursorShape.ArrowCursor)
+    #     event.ignore()
+    #     return super().mouseMoveEvent(event)
 
     def fadeIn(self, duration):
         # type: (int) -> None
@@ -72,8 +73,8 @@ class CustomQWidget(QWidget):
         )
 
 
-class ResizableFramelessWidget(
-    QWidget,
+class QResizableWidget(
+    CustomQWidget,
 ):
     class BorderStyle:
         def __init__(self, **kwargs):
@@ -188,7 +189,7 @@ class ResizableFramelessWidget(
 
     def _custom_repaint(self):
         # type: () -> None
-
+        print("custom repaint")
         painter = QPainter()
         brush = QBrush(BrushStyle.SolidPattern)
         bg_color = (
@@ -206,7 +207,13 @@ class ResizableFramelessWidget(
             painter.setBrush(brush)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
-            rect = QRect(0, 0, max(self.width() - 1, 0), max(self.height() - 1, 0))
+            frameGeometry = self.frameGeometry().topLeft()
+            rect = QRect(
+                frameGeometry.x(),
+                frameGeometry.y(),
+                max(self.width() - 1, 0),
+                max(self.height() - 1, 0),
+            )
             painter.drawRoundedRect(
                 rect, self._borderStyle.radius, self._borderStyle.radius
             )
@@ -272,8 +279,10 @@ class ResizableFramelessWidget(
             return border
         return border ^ self.__ResizableWidgetBorder.UNSET
 
-    def __isCursorInBorder(self, relPosX, relPosY):
-        # type: (int, int) -> bool
+    def _isCursorInBorder(self, event):
+        # type: (QMouseEvent) -> bool
+        pos = event.position()
+        relPosX, relPosY = pos.x(), pos.y()
         border = self.__getHoveredBorder(relPosX, relPosY)
         if border == self.__ResizableWidgetBorder.UNSET:
             return False
@@ -283,13 +292,12 @@ class ResizableFramelessWidget(
         # type: (QEvent | QMouseEvent) -> bool
 
         if isinstance(event, QMouseEvent):
-
             if self.__enabled:
                 pos = event.position()
                 relPosX, relPosY = pos.x(), pos.y()
 
                 if event.type() == QEvent.Type.MouseButtonPress:
-                    self.__resizeActive = self.__isCursorInBorder(relPosX, relPosY)
+                    self.__resizeActive = self._isCursorInBorder(event)
                     self._offendingBorder = self.__getHoveredBorder(relPosX, relPosY)
 
                 elif event.type() == QEvent.Type.MouseButtonRelease:
@@ -338,14 +346,45 @@ class ResizableFramelessWidget(
 
                         self.setGeometry(newX, newY, newW, newH)
 
-                return True
+                # return True
 
-            return False
         elif event.type() == QEvent.Type.Paint:
             self._custom_repaint()
             return True
 
-        return False
+        return super().event(event)
+
+
+class QMovableResizableWidget(QResizableWidget):
+    def __init__(self, parent, f: WindowTypes = None):
+        super().__init__(parent, f)
+        self.setAttribute(WidgetAttributes.WA_NativeWindow, True)
+        self.__systemMove = False
+
+    def event(self, ev):
+        # type: (QEvent | QMouseEvent) -> bool
+        if (
+            ev.type() == QEvent.Type.MouseButtonPress
+            and ev.button() == Qt.MouseButton.LeftButton
+            and not self._isCursorInBorder(ev)
+        ):
+            w = self.window()
+            if w is not None and not self.__systemMove:
+                if (w.windowHandle().startSystemMove()):
+                    # ev.accept()
+                    self.__systemMove = True
+                    # return True
+            
+        elif ev.type() == QEvent.Type.MouseButtonRelease:
+            # self.setFocus(Qt.FocusReason.ActiveWindowFocusReason)
+            pass
+
+        elif ev.type() == QEvent.Type.WindowActivate:
+            if self.__systemMove:
+                self.__systemMove = False
+                self.setWindowState(Qt.WindowState.WindowActive)
+                
+        return super().event(ev)
 
 
 class ClickableSvgWidget(QFrame):
@@ -365,27 +404,27 @@ class ClickableSvgWidget(QFrame):
 
         self.__btnPressCallback = msBtnPressCallback
         self.__svgWidget = QSvgWidget(svgFilePath, self)
-
+        self.__svgWidget.setAttribute(WidgetAttributes.WA_TransparentForMouseEvents, True)
+        
         vBox = QVBoxLayout(self)
         vBox.addWidget(self.__svgWidget)
         self.setLayout(vBox)
 
         self.setAttribute(WidgetAttributes.WA_MouseTracking, True)
-        self.setAttribute(WidgetAttributes.WA_Hover, True)
+        # self.setAttribute(WidgetAttributes.WA_Hover, True)
         vBox.setContentsMargins(0, 0, 0, 0)
 
     def event(self, ev):
         # type: (QEvent | QMouseEvent) -> None
 
-        if ev.type() == QEvent.Type.HoverEnter:
-            self.setCursor(CursorShape.PointingHandCursor)
-            return True
+        if ev.type() == QEvent.Type.MouseMove:
+            if self.cursor().shape() != CursorShape.PointingHandCursor:
+                self.setCursor(CursorShape.PointingHandCursor)
 
-        elif ev.type() == QEvent.Type.HoverLeave:
-            self.setCursor(CursorShape.ArrowCursor)
-            return True
-
-        elif ev.type() == QEvent.Type.MouseButtonPress:
+        elif (
+            ev.type() == QEvent.Type.MouseButtonPress
+            and ev.button() == Qt.MouseButton.LeftButton
+        ):
             if callable(self.__btnPressCallback):
                 self.__btnPressCallback(ev)
             return True
@@ -393,4 +432,4 @@ class ClickableSvgWidget(QFrame):
         elif ev.type() == QEvent.Type.MouseButtonRelease:
             return True
 
-        return False
+        return super().event(ev)

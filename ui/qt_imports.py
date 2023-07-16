@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QGridLayout,
     QGraphicsOpacityEffect,
+    QMainWindow,
 )
 from PySide6.QtSvgWidgets import QSvgWidget
 
@@ -24,6 +25,7 @@ QObject = QtCore.QObject
 QPropertyAnimation = QtCore.QPropertyAnimation
 QSize = QtCore.QSize
 QRect = QtCore.QRect
+QPoint = QtCore.QPoint
 
 AlignmentFlag = Qt.AlignmentFlag
 ApplicationAttributes = Qt.ApplicationAttribute
@@ -53,3 +55,4 @@ QPen = QtGui.QPen
 QPaintEvent = QtGui.QPaintEvent
 QPalette = QtGui.QPalette
 QPixmap = QtGui.QPixmap
+QWindow = QtGui.QWindow

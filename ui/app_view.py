@@ -1,9 +1,16 @@
 from typing import Optional, Callable
 
+import PySide6.QtCore
+
 from ui.qt_imports import QPaintEvent
 
 from .qt_imports import *
-from .custom_widgets import ResizableFramelessWidget, ClickableSvgWidget, CustomQWidget
+from .custom_widgets import (
+    QResizableWidget,
+    ClickableSvgWidget,
+    CustomQWidget,
+    QMovableResizableWidget,
+)
 from .fonts_import import CUSTOM_FONT_ID
 
 
@@ -27,7 +34,7 @@ class AppLabel(QLabel):
             self.setFont(font)
 
 
-class MainWindow(ResizableFramelessWidget):
+class MainWindow(QMovableResizableWidget):
     def __init__(
         self,
         parent,
@@ -35,8 +42,9 @@ class MainWindow(ResizableFramelessWidget):
         # type: (QWidget | None,) -> None
 
         super().__init__(
-            parent,
+            parent, WindowTypes.Window | WindowTypes.FramelessWindowHint
         )
+        self.setAttribute(WidgetAttributes.WA_Hover, True)
 
         mainLayout = QVBoxLayout(self)
 
@@ -85,6 +93,7 @@ class TitleBarGroup(CustomQWidget):
             super().__init__(parent, f)
         else:
             super().__init__(parent)
+        
 
         self.mainTextLabel = AppLabel(mainText, self, pixelSize=20)
         self.subTextLabel = AppLabel(subText, self)
@@ -112,6 +121,7 @@ class TitleBarGroup(CustomQWidget):
         )
         grid.setSpacing(0)
         grid.setContentsMargins(0, 0, 0, 0)
+        self.setAttribute(WidgetAttributes.WA_MouseTracking, True)
 
 
 class WindowContent(CustomQWidget):
@@ -133,4 +143,4 @@ class WindowControl(QWidget):
         else:
             super().__init__(parent)
 
-        self.setAutoFillBackground(True)
+        # self.setAutoFillBackground(True)
