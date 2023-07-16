@@ -376,7 +376,6 @@ class QMovableResizableWidget(QResizableWidget):
                     # return True
             
         elif ev.type() == QEvent.Type.MouseButtonRelease:
-            # self.setFocus(Qt.FocusReason.ActiveWindowFocusReason)
             pass
 
         elif ev.type() == QEvent.Type.WindowActivate:
@@ -402,6 +401,7 @@ class ClickableSvgWidget(QFrame):
         else:
             super().__init__(parent, f)
 
+        self.setCursor(CursorShape.PointingHandCursor)
         self.__btnPressCallback = msBtnPressCallback
         self.__svgWidget = QSvgWidget(svgFilePath, self)
         self.__svgWidget.setAttribute(WidgetAttributes.WA_TransparentForMouseEvents, True)
@@ -417,11 +417,7 @@ class ClickableSvgWidget(QFrame):
     def event(self, ev):
         # type: (QEvent | QMouseEvent) -> None
 
-        if ev.type() == QEvent.Type.MouseMove:
-            if self.cursor().shape() != CursorShape.PointingHandCursor:
-                self.setCursor(CursorShape.PointingHandCursor)
-
-        elif (
+        if (
             ev.type() == QEvent.Type.MouseButtonPress
             and ev.button() == Qt.MouseButton.LeftButton
         ):
