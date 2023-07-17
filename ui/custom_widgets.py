@@ -1,10 +1,8 @@
 import enum
-from ui.qt_imports import QPaintEvent
-
 from .qt_imports import *
 from typing import Callable
 from . import icons_rc
-
+from .utils import fadeAnimation
 
 class CustomQWidget(QWidget):
     def __init__(self, parent, windowType=None):
@@ -16,7 +14,9 @@ class CustomQWidget(QWidget):
 
         # self.setAttribute(WidgetAttributes.WA_Hover, True)
         self.setAttribute(WidgetAttributes.WA_MouseTracking, True)
-        self.__opacity_effect = QGraphicsOpacityEffect(self)
+        effect = QGraphicsOpacityEffect(self)
+        effect.setOpacity(1)
+        self.setGraphicsEffect(effect)
 
     def __customPaintEvent(self, event):
         # type: (QPaintEvent) -> None
@@ -34,43 +34,23 @@ class CustomQWidget(QWidget):
     #     event.ignore()
     #     return super().mouseMoveEvent(event)
 
-    def fadeIn(self, duration):
+    def _waitForPainter(self):
+        currEngine = self.paintEngine()
+        currPainter = currEngine.painter() if currEngine else None
+        while currPainter is not None and currPainter.isActive():
+            print("active...")
+        
+    def fadeIn(self, duration = 250):
         # type: (int) -> None
         # duration => milliseconds
-        if not isinstance(duration, int):
-            raise TypeError("Duration must be an integer")
+        return fadeAnimation(self, duration, True)
+        
 
-        self.setGraphicsEffect(self.__opacity_effect)
-        self.__fade_in_animation = QPropertyAnimation(self, "opacity")
-        self.__fade_in_animation.setDuration(duration)
-
-        self.__fade_in_animation.setStartValue(0)
-        self.__fade_in_animation.setEndValue(1)
-        self.__fade_in_animation.setEasingCurve(QEasingCurve(QEasingCurve.Type.InBack))
-
-        self.__fade_in_animation.start(
-            QPropertyAnimation.DeletionPolicy.KeepWhenStopped
-        )
-
-    def fadeOut(self, duration):
+    def fadeOut(self, duration = 250):
         # type: (int) -> None
         # duration => milliseconds
-        if not isinstance(duration, int):
-            raise TypeError("Duration must be an integer")
-
-        self.setGraphicsEffect(self.__opacity_effect)
-        self.__fade_out_animation = QPropertyAnimation(self, "opacity")
-        self.__fade_out_animation.setDuration(duration)
-
-        self.__fade_out_animation.setStartValue(0)
-        self.__fade_out_animation.setEndValue(1)
-        self.__fade_out_animation.setEasingCurve(
-            QEasingCurve(QEasingCurve.Type.OutBack)
-        )
-
-        self.__fade_out_animation.start(
-            QPropertyAnimation.DeletionPolicy.DeleteWhenStopped
-        )
+        return fadeAnimation(self, duration, False)
+       
 
 
 class QResizableWidget(
@@ -191,6 +171,7 @@ class QResizableWidget(
         # type: () -> None
         print("custom repaint")
         painter = QPainter()
+
         brush = QBrush(BrushStyle.SolidPattern)
         bg_color = (
             self.__bg_color()
@@ -239,7 +220,6 @@ class QResizableWidget(
                 fallback_color=self.__bg_color(),
             )
 
-        self.repaint()
 
     def __updateCursor(self, border=None):
         # type: (__ResizableWidgetBorder) -> None

@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtSvgWidgets import QSvgWidget
 
 Qt = QtCore.Qt
-
+QByteArray = QtCore.QByteArray
 QEasingCurve = QtCore.QEasingCurve
 QEvent = QtCore.QEvent
 QObject = QtCore.QObject

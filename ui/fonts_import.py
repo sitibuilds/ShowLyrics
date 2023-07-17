@@ -3,7 +3,6 @@ from . import fonts_rc
 
 
 class __CUSTOM_FONT_ID:
-    # __slots__ = ()
 
     __SOURCES = {
         "MONTSERRAT_REGULAR": ":/fonts/Montserrat-Regular.ttf",
