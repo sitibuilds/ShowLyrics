@@ -3,5 +3,8 @@
     <qresource prefix="/icons">
         <file>Close.svg</file>
         <file>Minimize.svg</file>
+        <file>Pause.svg</file>
+        <file>Play.svg</file>
+        <file>Settings.svg</file>
     </qresource>
 </RCC>
