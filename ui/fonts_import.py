@@ -1,6 +1,5 @@
 from .qt_imports import QFontDatabase
-from . import fonts_rc
-
+from .resources import fonts_rc
 
 class __CUSTOM_FONT_ID:
 

@@ -29,6 +29,30 @@
             ]
         },
         {
+            "label": "generate fonts_rc",
+            "command": "<qt-rcc-executable-path>",
+            "type": "shell",
+            "args": [
+                "-g",
+                "python",
+                "${workspaceFolder}${pathSeparator}assets${pathSeparator}fonts.qrc",
+                ">",
+                "${workspaceFolder}${pathSeparator}ui${pathSeparator}resources${pathSeparator}fonts_rc.py"
+            ]
+        },
+        {
+            "label": "generate icons_rc",
+            "command": "<qt-rcc-executable-path>",
+            "type": "shell",
+            "args": [
+                "-g",
+                "python",
+                "${workspaceFolder}${pathSeparator}assets${pathSeparator}icons.qrc",
+                ">",
+                "${workspaceFolder}${pathSeparator}ui${pathSeparator}resources${pathSeparator}icons_rc.py"
+            ]
+        },
+        {
             "label": "deploy",
             "command": "echo 'To be added soon. See pyside6-deploy in venv bin folder for more information'",
             "type": "shell",

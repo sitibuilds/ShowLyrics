@@ -1,7 +1,5 @@
 from typing import Optional, Callable
 
-import PySide6.QtCore
-
 from ui.qt_imports import QEvent, QMouseEvent, QPaintEvent
 
 from .qt_imports import *
@@ -148,6 +146,8 @@ class WindowContent(CustomQWidget):
             super().__init__(parent, f)
         else:
             super().__init__(parent)
+        
+        layout = QHBoxLayout()
 
         # self.setAttribute(WidgetAttributes.WA_TransparentForMouseEvents, True)
 

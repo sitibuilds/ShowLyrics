@@ -1,0 +1,1 @@
+from . import fonts_rc, icons_rc

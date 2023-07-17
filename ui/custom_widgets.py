@@ -1,7 +1,7 @@
 import enum
 from .qt_imports import *
 from typing import Callable
-from . import icons_rc
+from .resources import icons_rc
 from .utils import fadeAnimation
 
 class CustomQWidget(QWidget):
