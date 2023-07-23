@@ -1,4 +1,3 @@
-from .qt_imports import *
-from .custom_widgets import *
-from .settings import *
-from .app_view import *
+from .qt_imports import QApplication, ApplicationAttributes
+from .settings_view import *
+from .app_view import MainWindowView

@@ -1,7 +1,10 @@
-import enum
-from .qt_imports import *
 from typing import Callable
+import enum
+
+from .qt_imports import *
+from .icon_components import CloseIcon
 from .resources import icons_rc
+from .fonts_import import CUSTOM_FONT_ID
 from .utils import fadeAnimation
 
 
@@ -392,79 +395,105 @@ class QMovableResizableWidget(ResizableWidget):
         return super().event(ev)
 
 
-class ClickableSvgWidget(QFrame):
-    def __init__(
-        self,
-        parent: QWidget | None = ...,
-        f=None,
-        svgFilePath="",
-        msBtnPressCallback=None,
-    ) -> None:
-        # type: (QWidget| None, WindowTypes, str|None, Callable[[QEvent], None]) -> None
-
+class AppLabel(QLabel):
+    def __init__(self, txt, parent, f=None, fontName="montserrat_bold", pixelSize=12):
+        # type: (str, QWidget, WindowTypes, str, int)  -> None
         if f is None:
-            super().__init__(parent)
+            super().__init__(txt, parent)
         else:
+            super().__init__(txt, parent, f)
+
+        self.opacity = 1
+        self.FONTID = CUSTOM_FONT_ID.retrieve_font_id(fontName)
+        if self.FONTID < 0:
+            # print("Font couldn't load")
+            pass
+        else:
+            families = QFontDatabase.applicationFontFamilies(self.FONTID)
+            font = QFont(families[0])
+            font.setPixelSize(pixelSize)
+            self.setFont(font)
+
+        self.setStyleSheet("color: rgba(255,255,255,255)")
+
+    def setOpacity(self, value):
+        # type: (float) -> None
+        self.opacity = max(min(value, 1), 0) * 255
+        self.setStyleSheet(f"color: rgba(255,255,255, {self.opacity})")
+
+    def fadeIn(self, duration):
+        # type: (int) -> None
+        return fadeAnimation(self, duration, True)
+
+    def fadeOut(self, duration):
+        # type: (int) -> None
+        return fadeAnimation(self, duration, True)
+
+
+class TitleBarView(CustomQWidget):
+    def __init__(self, parent, f=None, mainText="", subText="", onCloseCallback=None):
+        # type: (QWidget | None, WindowTypes | None, str, str, Callable[[QEvent], None] | None) -> None
+
+        if f is not None:
             super().__init__(parent, f)
+        else:
+            super().__init__(parent)
 
-        self.setCursor(CursorShape.PointingHandCursor)
-        self.__btnPressCallback = msBtnPressCallback
-        self.__svgWidget = (
-            QSvgWidget(svgFilePath, self)
-            if svgFilePath and isinstance(svgFilePath, str)
-            else QWidget(self)
+        self.mainTextLabel = AppLabel(mainText, self, pixelSize=20)
+        self.subTextLabel = AppLabel(subText, self)
+
+        closeSvg = CloseIcon(self, callback=onCloseCallback)
+        self.closeSVG = closeSvg
+
+        grid = QGridLayout(self)
+        grid.addWidget(
+            self.mainTextLabel, 0, 0, AlignmentFlag.AlignLeft | AlignmentFlag.AlignTop
         )
-
-        self.__svgWidget.setAttribute(
-            WidgetAttributes.WA_TransparentForMouseEvents, True
+        grid.addWidget(
+            self.subTextLabel,
+            1,
+            0,
+            1,
+            2,
+            AlignmentFlag.AlignLeft | AlignmentFlag.AlignTop,
         )
-
-        vBox = QVBoxLayout(self)
-        vBox.addWidget(self.__svgWidget)
-        self.setLayout(vBox)
+        grid.addWidget(
+            self.closeSVG, 0, 1, AlignmentFlag.AlignRight | AlignmentFlag.AlignTop
+        )
+        grid.setSpacing(0)
+        grid.setContentsMargins(0, 0, 0, 0)
         self.setAttribute(WidgetAttributes.WA_MouseTracking, True)
-        vBox.setContentsMargins(0, 0, 0, 0)
 
-    def svgWidget(self):
-        # type: () -> QSvgWidget
-        return self.__svgWidget
+    def fadeIn(self, duration: int = 250) -> None:
 
-    def event(self, ev):
-        # type: (QEvent | QMouseEvent) -> None
+        return super().fadeIn(duration)
 
-        if (
-            ev.type() == QEvent.Type.MouseButtonPress
-            and ev.button() == Qt.MouseButton.LeftButton
-        ):
-            if callable(self.__btnPressCallback):
-                self.__btnPressCallback(ev)
-            ev.accept()
-            return True
 
-        elif ev.type() == QEvent.Type.MouseButtonRelease:
-            ev.accept()
-            return True
+class GenericWindowView(QMovableResizableWidget):
+    def __init__(self, parent, titleBarViewMainText, titleBarViewSubText, *childViews):
+        # type: (QWidget | None, str, str, *QWidget) -> None
+        super().__init__(parent, WindowTypes.Window | WindowTypes.FramelessWindowHint)
 
-        return super().event(ev)
+        mainLayout = QVBoxLayout(self)
 
-    def setSvgFilePath(self, path):
-        # type: (str) -> None
-        self._replaceInnerWidget(
-            QSvgWidget(path, self) if path and isinstance(path, str) else QWidget(self)
+        def closeWindow(ev):
+            self.close()
+
+        self._titleBarView = TitleBarView(
+            self,
+            mainText=titleBarViewMainText,
+            subText=titleBarViewSubText,
+            onCloseCallback=closeWindow,
         )
 
-    def _replaceInnerWidget(self, svgWidget):
-        # type: (QSvgWidget)  -> QSvgWidget
-        # Returns the old, replaced widget
-        if not svgWidget:
-            return self.__svgWidget
-        if not isinstance(svgWidget, QWidget):
-            raise TypeError("svgWidget must be an instance of QWidget")
+        self.__childViews = childViews
+        mainLayout.addWidget(self._titleBarView)
 
-        layout = self.layout()
-        layout.replaceWidget(
-            self.__svgWidget, svgWidget, Qt.FindChildOption.FindChildrenRecursively
-        )
-        prev_widget, self.__svgWidget = self.__svgWidget, svgWidget
+        for view in self.__childViews:
+            if isinstance(view, QWidget):
+                mainLayout.addStretch(1)
+                view.setParent(self)
+                mainLayout.addWidget(view)
 
-        return prev_widget
+        self.setLayout(mainLayout)
+        self.setBorderStyle(borderStyle=self.BorderStyle(radius=10, thickness=5))
