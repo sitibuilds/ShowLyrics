@@ -4,7 +4,7 @@ from ui.qt_imports import QEvent, QMouseEvent, QPaintEvent, QWidget, WindowTypes
 
 from .qt_imports import *
 from .custom_widgets import (
-    QResizableWidget,
+    FramelessRoundedBorderWidget,
     ClickableSvgWidget,
     CustomQWidget,
     QMovableResizableWidget,
@@ -48,17 +48,23 @@ class AppLabel(QLabel):
         # type: (int) -> None
         return fadeAnimation(self, duration, True)
 
+
 class GenericMainWindow(QMovableResizableWidget):
     def __init__(self, parent, titleBarViewMainText, titleBarViewSubText, *childViews):
         # type: (QWidget | None, str, str, *QWidget) -> None
         super().__init__(parent, WindowTypes.Window | WindowTypes.FramelessWindowHint)
-        
+
         mainLayout = QVBoxLayout(self)
 
         def closeWindow(ev):
             self.close()
 
-        self._titleBarView = TitleBarView(self, mainText=titleBarViewMainText, subText=titleBarViewSubText, onCloseCallback=closeWindow)
+        self._titleBarView = TitleBarView(
+            self,
+            mainText=titleBarViewMainText,
+            subText=titleBarViewSubText,
+            onCloseCallback=closeWindow,
+        )
 
         self.__childViews = childViews
         mainLayout.addWidget(self._titleBarView)
@@ -68,17 +74,24 @@ class GenericMainWindow(QMovableResizableWidget):
                 mainLayout.addStretch(1)
                 view.setParent(self)
                 mainLayout.addWidget(view)
-                
-        
+
         self.setLayout(mainLayout)
         self.setBorderStyle(borderStyle=self.BorderStyle(radius=10, thickness=5))
+
 
 class MainWindow(GenericMainWindow):
     def __init__(self, parent):
         # type: (QWidget | None) -> None
-        super().__init__(parent, "Main Text", "Sub Text", WindowContentView(None), LyricsViewControl(None))
+        super().__init__(
+            parent,
+            "Main Text",
+            "Sub Text",
+            WindowContentView(None),
+            LyricsViewControl(None),
+        )
         self.layout().setSpacing(0)
         self.resize(400, 180)
+
 
 class TitleBarView(CustomQWidget):
     def __init__(self, parent, f=None, mainText="", subText="", onCloseCallback=None):
@@ -139,9 +152,13 @@ class LyricsViewControl(QFrame):
             super().__init__(parent)
 
         # self.setAutoFillBackground(True)
-        playPause = PlayPauseIcon(self, lambda x: print("play", x), lambda y: print("pause", y))
+        playPause = PlayPauseIcon(
+            self, lambda x: print("play", x), lambda y: print("pause", y)
+        )
         settings = SettingsIcon(self, lambda x: print("settings"))
-        expandShrink = ExpandShrinkIcon(self, lambda x: print("expand", x), lambda y: print("shrink", y))
+        expandShrink = ExpandShrinkIcon(
+            self, lambda x: print("expand", x), lambda y: print("shrink", y)
+        )
 
         expandShrink.setFixedSizeAppIcons(20, 20)
         playPause.setFixedSizeAppIcons(20, 20)
@@ -159,12 +176,12 @@ class LyricsViewControl(QFrame):
 
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        
 
 class AppIcon(ClickableSvgWidget):
     def __init__(self, parent, svgFilePath, callback):
         # type: (QWidget | None, str | None, Callable[[QEvent], None]) -> None
         super().__init__(parent, None, svgFilePath, callback)
+
 
 class CloseIcon(AppIcon):
     def __init__(
@@ -172,10 +189,11 @@ class CloseIcon(AppIcon):
     ) -> None:
         super().__init__(parent, ":/icons/Close.svg", callback)
 
+
 class TwoStateIcon(AppIcon):
     def __init__(self, parent, stateAIcon, stateBIcon, stateACallback, stateBCallback):
         # type: (QWidget| None, str | None, str | None, Callable[[QEvent], None], Callable[[QEvent], None]) -> None
-        
+
         super().__init__(parent, "", None)
 
         self.__stateACallback = stateACallback
@@ -185,14 +203,14 @@ class TwoStateIcon(AppIcon):
             # type: (QEvent | None) -> None
             self.__stateACallback(ev)
             self.__changeState(False)
-        
+
         def _stateBCallback(ev):
             # type: (QEvent | None) -> None
             self.__stateBCallback(ev)
             self.__changeState(True)
 
-        self.__iconA  = AppIcon(self, stateAIcon, _stateACallback)
-        self.__iconB  = AppIcon(self, stateBIcon, _stateBCallback)
+        self.__iconA = AppIcon(self, stateAIcon, _stateACallback)
+        self.__iconB = AppIcon(self, stateBIcon, _stateBCallback)
 
         self.__is_state_A = None
         self.__iconA.hide()
@@ -208,34 +226,48 @@ class TwoStateIcon(AppIcon):
 
             prev_widget = None
             if to_state_A:
-                prev_widget = self._replaceSvgWidget(self.__iconA)
+                prev_widget = self._replaceInnerWidget(self.__iconA)
             else:
-                prev_widget = self._replaceSvgWidget(self.__iconB)
-            
+                prev_widget = self._replaceInnerWidget(self.__iconB)
+
             if prev_widget:
                 prev_widget.hide()
 
             curr_widget = self.svgWidget()
             if curr_widget:
                 curr_widget.show()
-        
+
     def setFixedSizeAppIcons(self, width, height):
         # type: (int, int) -> None
         self.__iconA.setFixedSize(width, height)
         self.__iconB.setFixedSize(width, height)
 
+
 class PlayPauseIcon(TwoStateIcon):
     def __init__(self, parent, playStateCallback, pauseStateCallback):
         # type: (QWidget | None, Callable[[QEvent], None], Callable[[QEvent], None]) -> None
-        super().__init__(parent, ":/icons/Play.svg", ":/icons/Pause.svg", playStateCallback, pauseStateCallback)
+        super().__init__(
+            parent,
+            ":/icons/Play.svg",
+            ":/icons/Pause.svg",
+            playStateCallback,
+            pauseStateCallback,
+        )
+
 
 class ExpandShrinkIcon(TwoStateIcon):
     def __init__(self, parent, expandStateCallback, shrinkStateCallback):
         # type: (QWidget | None, Callable[[QEvent], None], Callable[[QEvent], None]) -> None
-        super().__init__(parent, ":/icons/Expand.svg", ":/icons/Shrink.svg", expandStateCallback, shrinkStateCallback)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)        
-        
-    
+        super().__init__(
+            parent,
+            ":/icons/Expand.svg",
+            ":/icons/Shrink.svg",
+            expandStateCallback,
+            shrinkStateCallback,
+        )
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+
 class SettingsIcon(AppIcon):
     def __init__(self, parent, callback):
         # type: (QWidget | None, Callable[[QEvent], None]) -> None

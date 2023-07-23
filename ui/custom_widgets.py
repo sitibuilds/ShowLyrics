@@ -45,18 +45,20 @@ class CustomQWidget(QWidget):
         return fadeAnimation(self, duration, False)
 
 
-class QResizableWidget(
+class FramelessRoundedBorderWidget(
     CustomQWidget,
 ):
     class BorderStyle:
+        MIN_RADIUS = 0
+        MIN_THICKNESS = 3
+
         def __init__(self, **kwargs):
             # type: (...) -> None
-            self._minRadius, self._minThickness = 0, 3
 
             # Default border style
-            self.thickness = self._minThickness
+            self.thickness = self.MIN_THICKNESS
             self.color = None
-            self.radius = self._minRadius
+            self.radius = self.MIN_RADIUS
             self.setStyle(**kwargs)
 
         def __arg_type_check(self, **kwargs):
@@ -90,10 +92,10 @@ class QResizableWidget(
 
             else:
                 if "thickness" in kwargs:
-                    self.thickness = max(self._minThickness, kwargs["thickness"])
+                    self.thickness = max(self.MIN_THICKNESS, kwargs["thickness"])
 
                 if "radius" in kwargs:
-                    self.radius = max(self._minRadius, kwargs["radius"])
+                    self.radius = max(self.MIN_RADIUS, kwargs["radius"])
 
                 if self.color:
                     c = kwargs.get("color", None)
@@ -120,17 +122,6 @@ class QResizableWidget(
                 "color": self.color,
             }
 
-    class __ResizableWidgetBorder(enum.Flag):
-        LEFT = enum.auto()
-        RIGHT = enum.auto()
-        TOP = enum.auto()
-        BOTTOM = enum.auto()
-        UNSET = enum.auto()
-        TOPLEFT = TOP | LEFT
-        TOPRIGHT = TOP | RIGHT
-        BOTTOMRIGHT = BOTTOM | RIGHT
-        BOTTOMLEFT = BOTTOM | LEFT
-
     def __init__(self, parent, f: WindowTypes = None):
         if f is None:
             super().__init__(parent, WindowTypes.FramelessWindowHint)
@@ -139,34 +130,15 @@ class QResizableWidget(
 
         self.setAttribute(WidgetAttributes.WA_TranslucentBackground, True)
 
-        # Resizing support
-        self.setMouseTracking(True)
-
         self._borderStyle = self.BorderStyle()
-        self.__resizeActive = False
-        self._offendingBorder = self.__ResizableWidgetBorder.UNSET
-        self.__enabled = True
-
-    def enableResize(self, state):
-        # type: (bool) -> None
-        self.__enabled = state if type(state) is bool else True
-
-    def isResizeEnabled(self):
-        # type: () -> bool
-        return self.__enabled
-
-    def isResizeDisabled(self):
-        # type: () -> bool
-        return not self.__enabled
 
     def _custom_repaint(self):
         # type: () -> None
-        print("custom repaint")
         painter = QPainter()
 
         brush = QBrush(BrushStyle.SolidPattern)
         bg_color = (
-            self.__bg_color()
+            self.__default_bg_color()
             if self._borderStyle.color is None
             else self._borderStyle.color
         )
@@ -192,7 +164,7 @@ class QResizableWidget(
             )
             painter.end()
 
-    def __bg_color(self):
+    def __default_bg_color(self):
         # type: () -> QColor
         return self.palette().color(self.backgroundRole())
 
@@ -202,29 +174,164 @@ class QResizableWidget(
         # type: (QColor, int, int, BorderStyle | None) -> None
         if borderStyle is not None:
             self._borderStyle.setStyle(
-                obj=borderStyle, fallback_color=self.__bg_color()
+                obj=borderStyle, fallback_color=self.__default_bg_color()
             )
         else:
             self._borderStyle.setStyle(
                 color=borderColor,
                 thickness=borderThickness,
                 radius=borderRadius,
-                fallback_color=self.__bg_color(),
+                fallback_color=self.__default_bg_color(),
             )
+
+    def event(self, event):
+        # type: (QEvent | QMouseEvent) -> bool
+
+        if event.type() == QEvent.Type.Paint:
+            self._custom_repaint()
+            return True
+
+        return super().event(event)
+
+
+class ResizableWidget(FramelessRoundedBorderWidget):
+    class __ResizableWidgetBorder(enum.Flag):
+
+        LEFT = enum.auto()
+        RIGHT = enum.auto()
+        TOP = enum.auto()
+        BOTTOM = enum.auto()
+        UNSET = enum.auto()
+        TOPLEFT = TOP | LEFT
+        TOPRIGHT = TOP | RIGHT
+        BOTTOMRIGHT = BOTTOM | RIGHT
+        BOTTOMLEFT = BOTTOM | LEFT
+
+    __BORDER_TO_CURSOR_SHAPE = {
+        __ResizableWidgetBorder.BOTTOM: CursorShape.SizeVerCursor,
+        __ResizableWidgetBorder.TOP: CursorShape.SizeVerCursor,
+        __ResizableWidgetBorder.LEFT: CursorShape.SizeHorCursor,
+        __ResizableWidgetBorder.RIGHT: CursorShape.SizeHorCursor,
+        __ResizableWidgetBorder.BOTTOMLEFT: CursorShape.SizeBDiagCursor,
+        __ResizableWidgetBorder.TOPRIGHT: CursorShape.SizeBDiagCursor,
+        __ResizableWidgetBorder.BOTTOMRIGHT: CursorShape.SizeFDiagCursor,
+        __ResizableWidgetBorder.TOPLEFT: CursorShape.SizeFDiagCursor,
+    }
+
+    __BORDER_TO_NATIVE_EDGE = {
+        __ResizableWidgetBorder.BOTTOM: Qt.Edge.BottomEdge,
+        __ResizableWidgetBorder.TOP: Qt.Edge.TopEdge,
+        __ResizableWidgetBorder.LEFT: Qt.Edge.LeftEdge,
+        __ResizableWidgetBorder.RIGHT: Qt.Edge.RightEdge,
+        __ResizableWidgetBorder.BOTTOMLEFT: Qt.Edge.BottomEdge | Qt.Edge.LeftEdge,
+        __ResizableWidgetBorder.BOTTOMRIGHT: Qt.Edge.BottomEdge | Qt.Edge.RightEdge,
+        __ResizableWidgetBorder.TOPLEFT: Qt.Edge.TopEdge | Qt.Edge.LeftEdge,
+        __ResizableWidgetBorder.TOPRIGHT: Qt.Edge.TopEdge | Qt.Edge.RightEdge,
+    }
+
+    def __init__(self, parent, f=None):
+        # type: (QWidget | None, WindowTypes | None) -> None
+        super().__init__(parent, f)
+
+        self.setAttribute(WidgetAttributes.WA_NativeWindow, True)
+
+        # Resizing support
+        self.setMouseTracking(True)
+
+        self.__resizeActive = False
+        self.__offendingBorder = self.__ResizableWidgetBorder.UNSET
+        self.__resizeEnabled = True
+
+    def setEnableResize(self, state):
+        # type: (bool) -> None
+        self.__resizeEnabled = state if type(state) is bool else True
+
+    def isResizeEnabled(self):
+        # type: () -> bool
+        return self.__resizeEnabled
+
+    def isResizeDisabled(self):
+        # type: () -> bool
+        return not self.__resizeEnabled
+
+    def __fallbackMouseMove(self, event):
+        # type: (QEvent | QMouseEvent) -> None
+        pos = event.position()
+        relPosX, relPosY = pos.x(), pos.y()
+        if event.type() == QEvent.Type.MouseMove:
+
+            if not self.__resizeActive:
+                hoveredBorder = self.__getHoveredBorder(relPosX, relPosY)
+                self.__updateCursor(hoveredBorder)
+
+            else:
+                size = self.size()
+                oldW, oldH = size.width(), size.height()
+                x, y = self.x(), self.y()
+
+                globalPosition = event.globalPosition()
+                cursorGlobalX, cursorGlobalY = (
+                    globalPosition.x(),
+                    globalPosition.y(),
+                )
+
+                y1, y2, x1, x2 = y, y + oldH, x, x + oldW
+
+                if self.__ResizableWidgetBorder.TOP in self.__offendingBorder:
+                    y1 = cursorGlobalY
+
+                elif self.__ResizableWidgetBorder.BOTTOM in self.__offendingBorder:
+                    y2 = cursorGlobalY
+
+                if self.__ResizableWidgetBorder.LEFT in self.__offendingBorder:
+                    x1 = cursorGlobalX
+
+                elif self.__ResizableWidgetBorder.RIGHT in self.__offendingBorder:
+                    x2 = cursorGlobalX
+
+                newX, newY = x1, y1
+                newW, newH = max(0, x2 - x1), max(0, y2 - y1)
+
+                self.setGeometry(newX, newY, newW, newH)
+
+    def event(self, event):
+        # type: (QEvent| QMouseEvent) -> bool
+        if isinstance(event, QMouseEvent):
+            if self.__resizeEnabled:
+                pos = event.position()
+                relPosX, relPosY = pos.x(), pos.y()
+
+                if event.type() == QEvent.Type.MouseButtonPress:
+                    self.__resizeActive = self._isCursorInBorder(event)
+                    self.__offendingBorder = self.__getHoveredBorder(relPosX, relPosY)
+
+                    w = self.window()
+                    if w is not None and self.__resizeActive:
+                        nativeEdge = self.__BORDER_TO_NATIVE_EDGE.get(
+                            self.__offendingBorder, None
+                        )
+                        if nativeEdge and w.windowHandle().startSystemResize(
+                            nativeEdge
+                        ):
+                            return True
+
+                elif event.type() == QEvent.Type.MouseButtonRelease:
+                    if self.__resizeActive:
+                        self.__resizeActive = False
+
+                elif event.type() == QEvent.Type.MouseMove:
+                    self.__updateCursor(self.__getHoveredBorder(relPosX, relPosY))
+
+        elif event.type() == QEvent.Type.WindowActivate:
+            if self.__resizeActive:
+                self.__resizeActive = False
+                self.__offendingBorder = self.__ResizableWidgetBorder.UNSET
+
+        return super().event(event)
 
     def __updateCursor(self, border=None):
         # type: (__ResizableWidgetBorder) -> None
-        border_to_cursor = {
-            self.__ResizableWidgetBorder.BOTTOM: CursorShape.SizeVerCursor,
-            self.__ResizableWidgetBorder.TOP: CursorShape.SizeVerCursor,
-            self.__ResizableWidgetBorder.LEFT: CursorShape.SizeHorCursor,
-            self.__ResizableWidgetBorder.RIGHT: CursorShape.SizeHorCursor,
-            self.__ResizableWidgetBorder.BOTTOMLEFT: CursorShape.SizeBDiagCursor,
-            self.__ResizableWidgetBorder.TOPRIGHT: CursorShape.SizeBDiagCursor,
-            self.__ResizableWidgetBorder.BOTTOMRIGHT: CursorShape.SizeFDiagCursor,
-            self.__ResizableWidgetBorder.TOPLEFT: CursorShape.SizeFDiagCursor,
-        }
-        cursor_shape = border_to_cursor.get(border, None)
+        cursor_shape = self.__BORDER_TO_CURSOR_SHAPE.get(border, None)
         if cursor_shape is not None:
             self.setCursor(cursor_shape)
         else:
@@ -259,77 +366,10 @@ class QResizableWidget(
             return False
         return True
 
-    def event(self, event):
-        # type: (QEvent | QMouseEvent) -> bool
 
-        if isinstance(event, QMouseEvent):
-            if self.__enabled:
-                pos = event.position()
-                relPosX, relPosY = pos.x(), pos.y()
-
-                if event.type() == QEvent.Type.MouseButtonPress:
-                    self.__resizeActive = self._isCursorInBorder(event)
-                    self._offendingBorder = self.__getHoveredBorder(relPosX, relPosY)
-
-                elif event.type() == QEvent.Type.MouseButtonRelease:
-                    if self.__resizeActive:
-                        self.__resizeActive = False
-
-                    self._offendingBorder = self.__ResizableWidgetBorder.UNSET
-
-                elif event.type() == QEvent.Type.MouseMove:
-
-                    if not self.__resizeActive:
-                        hoveredBorder = self.__getHoveredBorder(relPosX, relPosY)
-                        self.__updateCursor(hoveredBorder)
-
-                    else:
-                        size = self.size()
-                        oldW, oldH = size.width(), size.height()
-                        x, y = self.x(), self.y()
-
-                        globalPosition = event.globalPosition()
-                        cursorGlobalX, cursorGlobalY = (
-                            globalPosition.x(),
-                            globalPosition.y(),
-                        )
-
-                        y1, y2, x1, x2 = y, y + oldH, x, x + oldW
-
-                        if self.__ResizableWidgetBorder.TOP in self._offendingBorder:
-                            y1 = cursorGlobalY
-
-                        elif (
-                            self.__ResizableWidgetBorder.BOTTOM in self._offendingBorder
-                        ):
-                            y2 = cursorGlobalY
-
-                        if self.__ResizableWidgetBorder.LEFT in self._offendingBorder:
-                            x1 = cursorGlobalX
-
-                        elif (
-                            self.__ResizableWidgetBorder.RIGHT in self._offendingBorder
-                        ):
-                            x2 = cursorGlobalX
-
-                        newX, newY = x1, y1
-                        newW, newH = max(0, x2 - x1), max(0, y2 - y1)
-
-                        self.setGeometry(newX, newY, newW, newH)
-
-                # return True
-
-        elif event.type() == QEvent.Type.Paint:
-            self._custom_repaint()
-            return True
-
-        return super().event(event)
-
-
-class QMovableResizableWidget(QResizableWidget):
+class QMovableResizableWidget(ResizableWidget):
     def __init__(self, parent, f: WindowTypes = None):
         super().__init__(parent, f)
-        self.setAttribute(WidgetAttributes.WA_NativeWindow, True)
         self.__systemMove = False
 
     def event(self, ev):
@@ -342,17 +382,12 @@ class QMovableResizableWidget(QResizableWidget):
             w = self.window()
             if w is not None and not self.__systemMove:
                 if w.windowHandle().startSystemMove():
-                    # ev.accept()
                     self.__systemMove = True
-                    # return True
-
-        elif ev.type() == QEvent.Type.MouseButtonRelease:
-            pass
+                    return True
 
         elif ev.type() == QEvent.Type.WindowActivate:
             if self.__systemMove:
                 self.__systemMove = False
-                self.setWindowState(Qt.WindowState.WindowActive)
 
         return super().event(ev)
 
@@ -374,7 +409,11 @@ class ClickableSvgWidget(QFrame):
 
         self.setCursor(CursorShape.PointingHandCursor)
         self.__btnPressCallback = msBtnPressCallback
-        self.__svgWidget = QSvgWidget(svgFilePath, self)
+        self.__svgWidget = (
+            QSvgWidget(svgFilePath, self)
+            if svgFilePath and isinstance(svgFilePath, str)
+            else QWidget(self)
+        )
 
         self.__svgWidget.setAttribute(
             WidgetAttributes.WA_TransparentForMouseEvents, True
@@ -410,9 +449,11 @@ class ClickableSvgWidget(QFrame):
 
     def setSvgFilePath(self, path):
         # type: (str) -> None
-        self._replaceSvgWidget(QSvgWidget(path, self))
+        self._replaceInnerWidget(
+            QSvgWidget(path, self) if path and isinstance(path, str) else QWidget(self)
+        )
 
-    def _replaceSvgWidget(self, svgWidget):
+    def _replaceInnerWidget(self, svgWidget):
         # type: (QSvgWidget)  -> QSvgWidget
         # Returns the old, replaced widget
         if not svgWidget:
@@ -421,7 +462,9 @@ class ClickableSvgWidget(QFrame):
             raise TypeError("svgWidget must be an instance of QWidget")
 
         layout = self.layout()
-        layout.replaceWidget(self.__svgWidget, svgWidget, Qt.FindChildOption.FindChildrenRecursively)
+        layout.replaceWidget(
+            self.__svgWidget, svgWidget, Qt.FindChildOption.FindChildrenRecursively
+        )
         prev_widget, self.__svgWidget = self.__svgWidget, svgWidget
-        
+
         return prev_widget
