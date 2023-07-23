@@ -64,13 +64,13 @@ class MainWindow(QMovableResizableWidget):
         def closeWindow(ev):
             self.close()
 
-        self._titleBar = TitleBarGroup(
+        self._titleBar = TitleBarView(
             self,
             mainText="Main Text",
             subText="Sub Text",
             onCloseCallback=closeWindow,
         )
-        self._windowContent = WindowContent(
+        self._windowContent = WindowContentView(
             self,
         )
         self._winControl = LyricsViewControl(
@@ -97,7 +97,7 @@ class MainWindow(QMovableResizableWidget):
         )
 
 
-class TitleBarGroup(CustomQWidget):
+class TitleBarView(CustomQWidget):
     def __init__(self, parent, f=None, mainText="", subText="", onCloseCallback=None):
         # type: (QWidget | None, WindowTypes | None, str, str, Callable[[QEvent], None] | None) -> None
 
@@ -136,7 +136,7 @@ class TitleBarGroup(CustomQWidget):
         return super().fadeIn(duration)
 
 
-class WindowContent(CustomQWidget):
+class WindowContentView(CustomQWidget):
     def __init__(self, parent, f=None) -> None:
         # type: (QWidget | None, WindowTypes) -> None
         if f is not None:
