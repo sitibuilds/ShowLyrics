@@ -6,5 +6,7 @@
         <file>Pause.svg</file>
         <file>Play.svg</file>
         <file>Settings.svg</file>
+        <file>Expand.svg</file>
+        <file>Shrink.svg</file>
     </qresource>
 </RCC>

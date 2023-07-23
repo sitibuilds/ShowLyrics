@@ -4,6 +4,7 @@ from typing import Callable
 from .resources import icons_rc
 from .utils import fadeAnimation
 
+
 class CustomQWidget(QWidget):
     def __init__(self, parent, windowType=None):
         # type: (QWidget | None, QtCore.Qt.WindowType | None) -> None
@@ -39,18 +40,16 @@ class CustomQWidget(QWidget):
         currPainter = currEngine.painter() if currEngine else None
         while currPainter is not None and currPainter.isActive():
             print("active...")
-        
-    def fadeIn(self, duration = 250):
+
+    def fadeIn(self, duration=250):
         # type: (int) -> None
         # duration => milliseconds
         return fadeAnimation(self, duration, True)
-        
 
-    def fadeOut(self, duration = 250):
+    def fadeOut(self, duration=250):
         # type: (int) -> None
         # duration => milliseconds
         return fadeAnimation(self, duration, False)
-       
 
 
 class QResizableWidget(
@@ -220,7 +219,6 @@ class QResizableWidget(
                 fallback_color=self.__bg_color(),
             )
 
-
     def __updateCursor(self, border=None):
         # type: (__ResizableWidgetBorder) -> None
         border_to_cursor = {
@@ -350,11 +348,11 @@ class QMovableResizableWidget(QResizableWidget):
         ):
             w = self.window()
             if w is not None and not self.__systemMove:
-                if (w.windowHandle().startSystemMove()):
+                if w.windowHandle().startSystemMove():
                     # ev.accept()
                     self.__systemMove = True
                     # return True
-            
+
         elif ev.type() == QEvent.Type.MouseButtonRelease:
             pass
 
@@ -362,7 +360,7 @@ class QMovableResizableWidget(QResizableWidget):
             if self.__systemMove:
                 self.__systemMove = False
                 self.setWindowState(Qt.WindowState.WindowActive)
-                
+
         return super().event(ev)
 
 
@@ -384,15 +382,20 @@ class ClickableSvgWidget(QFrame):
         self.setCursor(CursorShape.PointingHandCursor)
         self.__btnPressCallback = msBtnPressCallback
         self.__svgWidget = QSvgWidget(svgFilePath, self)
-        self.__svgWidget.setAttribute(WidgetAttributes.WA_TransparentForMouseEvents, True)
-        
+
+        self.__svgWidget.setAttribute(
+            WidgetAttributes.WA_TransparentForMouseEvents, True
+        )
+
         vBox = QVBoxLayout(self)
         vBox.addWidget(self.__svgWidget)
         self.setLayout(vBox)
-
         self.setAttribute(WidgetAttributes.WA_MouseTracking, True)
-        # self.setAttribute(WidgetAttributes.WA_Hover, True)
         vBox.setContentsMargins(0, 0, 0, 0)
+
+    def svgWidget(self):
+        # type: () -> QSvgWidget
+        return self.__svgWidget
 
     def event(self, ev):
         # type: (QEvent | QMouseEvent) -> None
@@ -403,9 +406,29 @@ class ClickableSvgWidget(QFrame):
         ):
             if callable(self.__btnPressCallback):
                 self.__btnPressCallback(ev)
+            ev.accept()
             return True
 
         elif ev.type() == QEvent.Type.MouseButtonRelease:
+            ev.accept()
             return True
 
         return super().event(ev)
+
+    def setSvgFilePath(self, path):
+        # type: (str) -> None
+        self._replaceSvgWidget(QSvgWidget(path, self))
+
+    def _replaceSvgWidget(self, svgWidget):
+        # type: (QSvgWidget)  -> QSvgWidget
+        # Returns the old, replaced widget
+        if not svgWidget:
+            return self.__svgWidget
+        if not isinstance(svgWidget, QWidget):
+            raise TypeError("svgWidget must be an instance of QWidget")
+
+        layout = self.layout()
+        layout.replaceWidget(self.__svgWidget, svgWidget, Qt.FindChildOption.FindChildrenRecursively)
+        prev_widget, self.__svgWidget = self.__svgWidget, svgWidget
+        
+        return prev_widget
