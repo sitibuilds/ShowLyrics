@@ -28,13 +28,6 @@ class CustomQWidget(QWidget):
         p = QPainter(self)
         self.style().drawPrimitive(QStyle.PrimitiveElement.PE_Widget, o, p, self)
 
-    # def mouseMoveEvent(self, event):
-    #     # type: (QMouseEvent) -> None
-    #     print("ms move CustomQWidget")
-    #     self.setCursor(CursorShape.ArrowCursor)
-    #     event.ignore()
-    #     return super().mouseMoveEvent(event)
-
     def _waitForPainter(self):
         currEngine = self.paintEngine()
         currPainter = currEngine.painter() if currEngine else None

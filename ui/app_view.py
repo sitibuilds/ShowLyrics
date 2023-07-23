@@ -48,54 +48,37 @@ class AppLabel(QLabel):
         # type: (int) -> None
         return fadeAnimation(self, duration, True)
 
-
-class MainWindow(QMovableResizableWidget):
-    def __init__(
-        self,
-        parent,
-    ):
-        # type: (QWidget | None,) -> None
-
+class GenericMainWindow(QMovableResizableWidget):
+    def __init__(self, parent, titleBarViewMainText, titleBarViewSubText, *childViews):
+        # type: (QWidget | None, str, str, *QWidget) -> None
         super().__init__(parent, WindowTypes.Window | WindowTypes.FramelessWindowHint)
-        self.setAttribute(WidgetAttributes.WA_Hover, True)
-
+        
         mainLayout = QVBoxLayout(self)
 
         def closeWindow(ev):
             self.close()
 
-        self._titleBar = TitleBarView(
-            self,
-            mainText="Main Text",
-            subText="Sub Text",
-            onCloseCallback=closeWindow,
-        )
-        self._windowContent = WindowContentView(
-            self,
-        )
-        self._winControl = LyricsViewControl(
-            self,
-        )
+        self._titleBarView = TitleBarView(self, mainText=titleBarViewMainText, subText=titleBarViewSubText, onCloseCallback=closeWindow)
 
-        mainLayout.addWidget(self._titleBar)
-        mainLayout.addWidget(self._windowContent)
-        mainLayout.addWidget(self._winControl)
+        self.__childViews = childViews
+        mainLayout.addWidget(self._titleBarView)
 
-        mainLayout.setStretch(0, 0)
-        mainLayout.setStretch(2, 0)
-        mainLayout.setStretch(1, 1)
-
-        mainLayout.setSpacing(0)
+        for view in self.__childViews:
+            if isinstance(view, QWidget):
+                mainLayout.addStretch(1)
+                view.setParent(self)
+                mainLayout.addWidget(view)
+                
+        
         self.setLayout(mainLayout)
+        self.setBorderStyle(borderStyle=self.BorderStyle(radius=10, thickness=5))
+
+class MainWindow(GenericMainWindow):
+    def __init__(self, parent):
+        # type: (QWidget | None) -> None
+        super().__init__(parent, "Main Text", "Sub Text", WindowContentView(None), LyricsViewControl(None))
+        self.layout().setSpacing(0)
         self.resize(400, 180)
-
-        self.setBorderStyle(
-            borderStyle=self.BorderStyle(
-                radius=10,
-                thickness=5,
-            )
-        )
-
 
 class TitleBarView(CustomQWidget):
     def __init__(self, parent, f=None, mainText="", subText="", onCloseCallback=None):
