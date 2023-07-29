@@ -14,6 +14,10 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGraphicsOpacityEffect,
     QMainWindow,
+    QCheckBox,
+    QSpinBox,
+    QToolButton,
+    QColorDialog
 )
 from PySide6.QtSvgWidgets import QSvgWidget
 
@@ -38,6 +42,7 @@ SizeMode = Qt.SizeMode
 WidgetAttributes = Qt.WidgetAttribute
 WindowTypes = Qt.WindowType
 
+QAction = QtGui.QAction
 QBrush = QtGui.QBrush
 QColor = QtGui.QColor
 QCursor = QtGui.QCursor
@@ -47,10 +52,12 @@ QDragLeaveEvent = QtGui.QDragLeaveEvent
 QFont = QtGui.QFont
 QFontDatabase = QtGui.QFontDatabase
 QHoverEvent = QtGui.QHoverEvent
+QIcon = QtGui.QIcon
 QImage = QtGui.QImage
 QMouseEvent = QtGui.QMouseEvent
 QPainter = QtGui.QPainter
 QPainterPath = QtGui.QPainterPath
+QPalette = QtGui.QPalette
 QPen = QtGui.QPen
 QPaintEvent = QtGui.QPaintEvent
 QPalette = QtGui.QPalette

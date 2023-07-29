@@ -497,3 +497,102 @@ class GenericWindowView(QMovableResizableWidget):
 
         self.setLayout(mainLayout)
         self.setBorderStyle(borderStyle=self.BorderStyle(radius=10, thickness=5))
+
+
+class CustomSpacing(CustomQWidget):
+    def __init__(self, parent, useVerticalSpacing, *widgets):
+        # type: (QWidget| None, bool, *QWidget) -> None
+        super().__init__(parent, )
+
+        if useVerticalSpacing:
+            layout = QVBoxLayout(self)
+        else:
+            layout = QHBoxLayout(self)
+
+        for idx, widget in enumerate(widgets):
+            if idx != 0:
+                layout.addStretch(1)
+            widget.setParent(self)
+            layout.addWidget(widget)
+
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+
+
+
+class CustomHorizontalLayout(CustomSpacing):
+    def __init__(self, parent, *widgets) -> None:
+        # type: (QWidget | None, *QWidget) -> None
+        super().__init__(parent, False, *widgets)
+
+
+class CustomVerticalLayout(CustomSpacing):
+    def __init__(self, parent, *widgets) -> None:
+        # type: (QWidget | None, *QWidget) -> None
+        super().__init__(parent, True, *widgets)
+
+
+class CustomCheckBox(QCheckBox):
+    def __init__(self, parent, onChangeHandler):
+        # type: (QWidget | None, Callable[[Qt.CheckState], None]) -> None
+
+        super().__init__("", parent)
+        self.setTristate(False)
+        self.stateChanged.connect(onChangeHandler)
+
+
+class CustomSpinBox(QSpinBox):
+    def __init__(self, parent, onChangeHandler, minValue=5):
+        # type: (QWidget | None, Callable[[int], None], int) -> None
+
+        super().__init__(parent)
+        self.valueChanged.connect(onChangeHandler)
+        self.setMinimum(minValue)
+
+
+class ColorPickerTool(QWidget):
+    def __init__(
+        self,
+        parent,
+        onChangedHandler,
+    ):
+        # type: (QWidget | None, Callable[[QAction], None]) -> None
+
+        super().__init__(parent)
+
+        layout = QHBoxLayout(self)
+
+        self._btn = QToolButton(self)
+        self._btn.triggered.connect(onChangedHandler)
+        self._btn.setIcon(QIcon(":/icons/Settings.svg")) # TODO: Change icon to down arrow
+
+
+        self._label = QLabel(self)
+        self._label.setFixedSize(self._btn.height()-5, self._btn.height()-5)
+        self._label.setAutoFillBackground(True)
+        self._label.setStyleSheet("QLabel { background-color: red}")
+    
+        layout.addWidget(self._label)
+        layout.addWidget(self._btn)
+
+        self.__color = GlobalColor.white # TODO: Load color from settings
+        self.__setColor(self.__color)
+
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        self.setLayout(layout)
+
+    
+    def __setColor(self, color):
+        # type: (QColor | GlobalColor) -> None
+        labelPalette = self._label.palette()
+        labelPalette.setColor(QPalette.ColorRole.Window, color)
+        self.__color = color
+
+    def updateColor(self):
+        
+        color = QColorDialog.getColor()
+
+        if color.isValid():
+            self.__setColor(color)
+

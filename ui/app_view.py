@@ -1,6 +1,12 @@
-from .qt_imports import QWidget, WindowTypes
 from .generic_view_components import *
-from .icon_components import *
+from .icon_components import (
+    AppIcon,
+    CloseIcon,
+    SettingsIcon,
+    TwoStateIcon,
+    PlayPauseIcon,
+    ExpandShrinkIcon,
+)
 
 
 class MainWindowView(GenericWindowView):
