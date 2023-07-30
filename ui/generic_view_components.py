@@ -447,7 +447,7 @@ class TitleBarView(CustomQWidget):
 
         grid = QGridLayout(self)
         grid.addWidget(
-            self.mainTextLabel, 0, 0, AlignmentFlag.AlignLeft | AlignmentFlag.AlignTop
+            self.mainTextLabel, 0, 0, 1, 1, AlignmentFlag.AlignLeft | AlignmentFlag.AlignTop
         )
         grid.addWidget(
             self.subTextLabel,
@@ -460,9 +460,11 @@ class TitleBarView(CustomQWidget):
         grid.addWidget(
             self.closeSVG, 0, 1, AlignmentFlag.AlignRight | AlignmentFlag.AlignTop
         )
-        grid.setSpacing(0)
+        grid.setVerticalSpacing(0)
+        grid.setHorizontalSpacing(0)
         grid.setContentsMargins(0, 0, 0, 0)
-        self.setAttribute(WidgetAttributes.WA_MouseTracking, True)
+
+        self.setLayout(grid)
 
     def fadeIn(self, duration: int = 250) -> None:
 
@@ -488,24 +490,26 @@ class GenericWindowView(QMovableResizableWidget):
         )
 
         self.__childViews = childViews
-        mainLayout.addWidget(self._titleBarView)
+        mainLayout.addWidget(self._titleBarView, 0, AlignmentFlag.AlignTop)
 
         # Add mid section elements
-        bodyLayout = QVBoxLayout()
+        midSection = QFrame(self)
+        bodyLayout = QVBoxLayout(midSection) 
+        midSection.setLayout(bodyLayout)
         for view in self.__childViews:
             if isinstance(view, QWidget):
                 view.setParent(self)
                 bodyLayout.addWidget(view)
 
-        mainLayout.addLayout(bodyLayout)
+        mainLayout.addWidget(midSection, 1, AlignmentFlag.AlignVCenter)
 
         # Add footer element
         if isinstance(footer, QWidget):
-            mainLayout.addWidget(footer)
-
-        mainLayout.setSpacing(0)
+            mainLayout.addWidget(footer, 0, AlignmentFlag.AlignBottom)
+            footer.setParent(self)
 
         self.setLayout(mainLayout)
+
         self.setBorderStyle(borderStyle=self.BorderStyle(radius=10, thickness=5))
 
 

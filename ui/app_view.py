@@ -23,7 +23,7 @@ class MainWindowView(GenericWindowView):
         self.resize(400, 180)
 
 
-class WindowContentView(CustomQWidget):
+class WindowContentView(QFrame):
     def __init__(self, parent, f=None) -> None:
         # type: (QWidget | None, WindowTypes) -> None
         if f is not None:
@@ -31,7 +31,11 @@ class WindowContentView(CustomQWidget):
         else:
             super().__init__(parent)
 
-        layout = QHBoxLayout()
+        layout = QHBoxLayout(self)
+        self.setLayout(layout)
+
+        # self.setFixedSize(50, 50)
+        self.setStyleSheet("background-color: green")
 
 
 class LyricsViewControl(QFrame):
