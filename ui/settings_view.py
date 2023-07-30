@@ -26,9 +26,7 @@ class SettingsView(GenericWindowView):
         row2 = SettingsRow(None, "Font Size", self.__fontSizeSpinBox)
         row3 = SettingsRow(None, "Background Color", self.__colorChooser)
 
-        settings = CustomVerticalLayout(None, row1, row2, row3)
-
-        super().__init__(parent, "Settings", "", settings)
+        super().__init__(parent, "Settings", "", row1, row2, row3)
 
 
 class SettingsRow(CustomHorizontalLayout):

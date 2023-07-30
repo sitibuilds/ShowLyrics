@@ -17,7 +17,7 @@ class MainWindowView(GenericWindowView):
             "Main Text",
             "Sub Text",
             WindowContentView(None),
-            LyricsViewControl(None),
+            footer=LyricsViewControl(None),
         )
         self.layout().setSpacing(0)
         self.resize(400, 180)

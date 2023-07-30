@@ -470,8 +470,8 @@ class TitleBarView(CustomQWidget):
 
 
 class GenericWindowView(QMovableResizableWidget):
-    def __init__(self, parent, titleBarViewMainText, titleBarViewSubText, *childViews):
-        # type: (QWidget | None, str, str, *QWidget) -> None
+    def __init__(self, parent, titleBarViewMainText, titleBarViewSubText, *childViews, footer=None):
+        # type: (QWidget | None, str, str, *QWidget, QWidget) -> None
         super().__init__(parent, WindowTypes.Window | WindowTypes.FramelessWindowHint)
 
         mainLayout = QVBoxLayout(self)
@@ -479,6 +479,7 @@ class GenericWindowView(QMovableResizableWidget):
         def closeWindow(ev):
             self.close()
 
+        # Set up and add header
         self._titleBarView = TitleBarView(
             self,
             mainText=titleBarViewMainText,
@@ -489,11 +490,20 @@ class GenericWindowView(QMovableResizableWidget):
         self.__childViews = childViews
         mainLayout.addWidget(self._titleBarView)
 
+        # Add mid section elements
+        bodyLayout = QVBoxLayout()
         for view in self.__childViews:
             if isinstance(view, QWidget):
-                mainLayout.addStretch(1)
                 view.setParent(self)
-                mainLayout.addWidget(view)
+                bodyLayout.addWidget(view)
+
+        mainLayout.addLayout(bodyLayout)
+
+        # Add footer element
+        if isinstance(footer, QWidget):
+            mainLayout.addWidget(footer)
+
+        mainLayout.setSpacing(0)
 
         self.setLayout(mainLayout)
         self.setBorderStyle(borderStyle=self.BorderStyle(radius=10, thickness=5))
