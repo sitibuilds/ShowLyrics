@@ -461,7 +461,6 @@ class TitleBarView(CustomQWidget):
             self.closeSVG, 0, 1, AlignmentFlag.AlignRight | AlignmentFlag.AlignTop
         )
         grid.setVerticalSpacing(0)
-        grid.setHorizontalSpacing(0)
         grid.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(grid)
