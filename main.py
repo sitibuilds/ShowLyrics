@@ -1,5 +1,5 @@
 import sys, os
-from ui import (
+from src import (
     QApplication,
     MainWindowView,
     ApplicationAttributes,

@@ -17,7 +17,8 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QSpinBox,
     QToolButton,
-    QColorDialog
+    QColorDialog,
+    QScrollArea,
 )
 from PySide6.QtSvgWidgets import QSvgWidget
 

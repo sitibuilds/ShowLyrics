@@ -17,7 +17,7 @@ class MainWindowView(GenericWindowView):
             "Main Text",
             "Sub Text",
             LyricsView(None),
-            footer=MediaControl(None),
+            footer=FooterView(None),
         )
         self.layout().setSpacing(0)
         self.resize(400, 180)
@@ -38,7 +38,7 @@ class LyricsView(QFrame):
         self.setStyleSheet("background-color: green")
 
 
-class MediaControl(QFrame):
+class FooterView(QFrame):
     def __init__(self, parent, f=None):
         # type: (QWidget | None, WindowTypes | None) -> None
         if f is not None:

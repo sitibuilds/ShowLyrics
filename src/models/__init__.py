@@ -1,0 +1,1 @@
+from .lyrics_view_model import LyricsViewModel
