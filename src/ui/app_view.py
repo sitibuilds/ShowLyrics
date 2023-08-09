@@ -6,6 +6,7 @@ from .icon_components import (
     TwoStateIcon,
     PlayPauseIcon,
     ExpandShrinkIcon,
+    RewindIcon,
 )
 
 
@@ -38,6 +39,33 @@ class LyricsView(QFrame):
         self.setStyleSheet("background-color: green")
 
 
+class MediaControl(QFrame):
+    def __init__(self, parent, f=None):
+        if f is not None:
+            super().__init__(parent, f)
+        else:
+            super().__init__(parent)
+
+        layout = QHBoxLayout(self)
+
+        playPause = PlayPauseIcon(
+            self, lambda x: print("play", x), lambda y: print("pause", y)
+        )
+        playPause.setFixedSizeAppIcons(20, 20)
+
+        rewindBackward = RewindIcon(self, lambda x: print("rewind back", x), False)
+        rewindBackward.setFixedSize(20, 20)
+        rewindForward = RewindIcon(self, lambda x: print("rewind forward", x), True)
+        rewindForward.setFixedSize(20, 20)
+
+        layout.addWidget(rewindBackward)
+        layout.addWidget(playPause)
+        layout.addWidget(rewindForward)
+
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(layout)
+
+
 class FooterView(QFrame):
     def __init__(self, parent, f=None):
         # type: (QWidget | None, WindowTypes | None) -> None
@@ -47,24 +75,18 @@ class FooterView(QFrame):
             super().__init__(parent)
 
         # self.setAutoFillBackground(True)
-        playPause = PlayPauseIcon(
-            self, lambda x: print("play", x), lambda y: print("pause", y)
-        )
+        mediaControl = MediaControl(self)
+        image = CustomImage(self, "https://www.python.org/static/img/python-logo.png")
         settings = SettingsIcon(self, lambda x: print("settings"))
-        expandShrink = ExpandShrinkIcon(
-            self, lambda x: print("expand", x), lambda y: print("shrink", y)
-        )
 
-        expandShrink.setFixedSizeAppIcons(20, 20)
-        playPause.setFixedSizeAppIcons(20, 20)
         settings.setFixedSize(20, 20)
 
         layout = QHBoxLayout()
+        layout.addWidget(image)
+        layout.addStretch(1)
+        layout.addWidget(mediaControl)
+        layout.addStretch(1)
         layout.addWidget(settings)
-        layout.addStretch(1)
-        layout.addWidget(playPause)
-        layout.addStretch(1)
-        layout.addWidget(expandShrink)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(layout)

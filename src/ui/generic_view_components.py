@@ -5,7 +5,8 @@ from .qt_imports import *
 from .icon_components import CloseIcon
 from .resources import icons_rc
 from .fonts_import import CUSTOM_FONT_ID
-from .utils import fadeAnimation
+from .utils import fadeAnimation, resetFixedSize
+from functools import cache
 
 
 class CustomQWidget(QWidget):
@@ -82,7 +83,7 @@ class FramelessRoundedBorderWidget(
         ):
             # type: (...) -> None
             if not self.__arg_type_check(**kwargs):
-                print("BorderStyle: setStyle received bad argument types")
+                QtCore.qDebug("BorderStyle: setStyle received bad argument types")
                 return
 
             obj = kwargs.get("obj", None)
@@ -406,7 +407,7 @@ class AppLabel(QLabel):
         self.opacity = 1
         self.FONTID = CUSTOM_FONT_ID.retrieve_font_id(fontName)
         if self.FONTID < 0:
-            # print("Font couldn't load")
+            # QtCore.qDebug("Font couldn't load")
             pass
         else:
             families = QFontDatabase.applicationFontFamilies(self.FONTID)
@@ -447,7 +448,12 @@ class TitleBarView(CustomQWidget):
 
         grid = QGridLayout(self)
         grid.addWidget(
-            self.mainTextLabel, 0, 0, 1, 1, AlignmentFlag.AlignLeft | AlignmentFlag.AlignTop
+            self.mainTextLabel,
+            0,
+            0,
+            1,
+            1,
+            AlignmentFlag.AlignLeft | AlignmentFlag.AlignTop,
         )
         grid.addWidget(
             self.subTextLabel,
@@ -471,7 +477,14 @@ class TitleBarView(CustomQWidget):
 
 
 class GenericWindowView(QMovableResizableWidget):
-    def __init__(self, parent, titleBarViewMainText, titleBarViewSubText, *childViews, footer=None):
+    def __init__(
+        self,
+        parent,
+        titleBarViewMainText,
+        titleBarViewSubText,
+        *childViews,
+        footer=None,
+    ):
         # type: (QWidget | None, str, str, *QWidget, QWidget) -> None
         super().__init__(parent, WindowTypes.Window | WindowTypes.FramelessWindowHint)
 
@@ -493,7 +506,7 @@ class GenericWindowView(QMovableResizableWidget):
 
         # Add mid section elements
         midSection = QFrame(self)
-        bodyLayout = QVBoxLayout(midSection) 
+        bodyLayout = QVBoxLayout(midSection)
         midSection.setLayout(bodyLayout)
         for view in self.__childViews:
             if isinstance(view, QWidget):
@@ -515,7 +528,9 @@ class GenericWindowView(QMovableResizableWidget):
 class CustomSpacing(CustomQWidget):
     def __init__(self, parent, useVerticalSpacing, *widgets):
         # type: (QWidget| None, bool, *QWidget) -> None
-        super().__init__(parent, )
+        super().__init__(
+            parent,
+        )
 
         if useVerticalSpacing:
             layout = QVBoxLayout(self)
@@ -530,7 +545,6 @@ class CustomSpacing(CustomQWidget):
 
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
-
 
 
 class CustomHorizontalLayout(CustomSpacing):
@@ -577,25 +591,25 @@ class ColorPickerTool(QWidget):
 
         self._btn = QToolButton(self)
         self._btn.triggered.connect(onChangedHandler)
-        self._btn.setIcon(QIcon(":/icons/Settings.svg")) # TODO: Change icon to down arrow
-
+        self._btn.setIcon(
+            QIcon(":/icons/Settings.svg")
+        )  # TODO: Change icon to down arrow
 
         self._label = QLabel(self)
-        self._label.setFixedSize(self._btn.height()-5, self._btn.height()-5)
+        self._label.setFixedSize(self._btn.height() - 5, self._btn.height() - 5)
         self._label.setAutoFillBackground(True)
         self._label.setStyleSheet("QLabel { background-color: red}")
-    
+
         layout.addWidget(self._label)
         layout.addWidget(self._btn)
 
-        self.__color = GlobalColor.white # TODO: Load color from settings
+        self.__color = GlobalColor.white  # TODO: Load color from settings
         self.__setColor(self.__color)
 
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         self.setLayout(layout)
 
-    
     def __setColor(self, color):
         # type: (QColor | GlobalColor) -> None
         labelPalette = self._label.palette()
@@ -603,9 +617,80 @@ class ColorPickerTool(QWidget):
         self.__color = color
 
     def updateColor(self):
-        
+
         color = QColorDialog.getColor()
 
         if color.isValid():
             self.__setColor(color)
 
+
+class CustomImage(QLabel):
+    def __init__(self, parent, src):
+        # type: (QWidget | None, QPixmap | str | QImage) -> None
+        super().__init__(parent)
+
+        self.__currentSize = QSize(60, 60)
+        self.setScaledContents(True)
+
+        if isinstance(src, str):
+            self.load_image_from_url(src)
+        elif src is not None:
+            self.setPixmap(src)
+            self.resizeImage()
+
+    def resetFixedSize(self):
+        resetFixedSize(self)
+
+    def resizeImage(self):
+        pixmap = self.pixmap()
+        if pixmap:
+            self.setPixmap(
+                pixmap.scaled(
+                    self.__currentSize,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+            )
+
+    @cache
+    def networkManager(self):
+        manager = QtNetwork.QNetworkAccessManager(self)
+        manager.finished.connect(self._handle_reply)
+        return manager
+
+    def _handle_reply(self, reply):
+        # type: (QtNetwork.QNetworkReply,) -> None
+
+        if reply.error() == QtNetwork.QNetworkReply.NetworkError.NoError:
+
+            response_data = reply.readAll()
+            image = QImage()
+
+            if image.loadFromData(response_data.data()):
+                QtCore.qDebug("load_image_from_url: Image Loaded")
+
+                self.setPixmap(QPixmap(image))
+                self.resizeImage()
+
+            else:
+                QtCore.qDebug("load_image_from_url: Image Not Loaded")
+
+        else:
+            QtCore.qDebug("load_image_from_url: QNetworkReply Error!")
+
+    def load_image_from_url(self, url_str, new_size=None):
+        # type: (str, QSize | None) -> None
+        url = QUrl(url_str)
+
+        if url.isValid():
+            QtCore.qDebug("load_image_from_url: url is valid => " + url.url())
+
+            if not url.isLocalFile():
+                QtCore.qDebug("load_image_from_url: url is not a local file")
+                QtNetwork.QNetworkProxyFactory.setUseSystemConfiguration(True)
+            else:
+                QtCore.qDebug("load_image_from_url: url is a local file")
+
+            if isinstance(new_size, QSize):
+                self.__currentSize = new_size
+            self.networkManager().get(QtNetwork.QNetworkRequest(url))

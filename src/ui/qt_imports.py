@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
 )
 from PySide6.QtSvgWidgets import QSvgWidget
+import PySide6.QtNetwork as QtNetwork
 
 Qt = QtCore.Qt
 QByteArray = QtCore.QByteArray
@@ -31,6 +32,7 @@ QPropertyAnimation = QtCore.QPropertyAnimation
 QSize = QtCore.QSize
 QRect = QtCore.QRect
 QPoint = QtCore.QPoint
+QUrl = QtCore.QUrl
 
 AlignmentFlag = Qt.AlignmentFlag
 ApplicationAttributes = Qt.ApplicationAttribute

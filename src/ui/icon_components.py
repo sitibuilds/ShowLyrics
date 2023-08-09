@@ -45,7 +45,6 @@ class ClickableSvgWidget(QFrame):
         vBox = QVBoxLayout(self)
         vBox.addWidget(self.__svgWidget)
         self.setLayout(vBox)
-        self.setAttribute(WidgetAttributes.WA_MouseTracking, True)
         vBox.setContentsMargins(0, 0, 0, 0)
 
     def svgWidget(self):
@@ -188,3 +187,11 @@ class SettingsIcon(AppIcon):
     def __init__(self, parent, callback):
         # type: (QWidget | None, Callable[[QEvent], None]) -> None
         super().__init__(parent, ":/icons/Settings.svg", callback)
+
+
+class RewindIcon(AppIcon):
+    def __init__(self, parent, callback, useForwardRewind):
+        # type: (QWidget | None, Callable[[QEvent], None], bool) -> None
+        super().__init__(
+            parent, ":/icons/Settings.svg", callback
+        )  # TODO: Update svg resource

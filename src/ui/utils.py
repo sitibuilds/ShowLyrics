@@ -1,4 +1,15 @@
-from .qt_imports import QWidget, QGraphicsOpacityEffect, QPropertyAnimation, QByteArray
+from .qt_imports import (
+    QWidget,
+    QGraphicsOpacityEffect,
+    QPropertyAnimation,
+    QByteArray,
+)
+
+class CONSTANTS:
+    __slots__ = ()
+    QWIDGETSIZE_MAX = (
+        1 << 24
+    ) - 1  # https://riverbankcomputing.com/pipermail/pyqt/2015-April/035748.html
 
 
 def fadeAnimation(obj, duration, is_fade_in):
@@ -22,3 +33,11 @@ def fadeAnimation(obj, duration, is_fade_in):
 
     effect.setOpacity(0)
     obj.setGraphicsEffect(effect)
+
+
+def resetFixedSize(widget):
+    # type: (QWidget) -> None
+
+    if isinstance(widget, QWidget):
+        widget.setMaximumSize(CONSTANTS.QWIDGETSIZE_MAX, CONSTANTS.QWIDGETSIZE_MAX)
+        widget.setMinimumSize(0, 0)
